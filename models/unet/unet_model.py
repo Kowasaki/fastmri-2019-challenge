@@ -176,13 +176,10 @@ class CustomUnetModel(nn.Module):
 
         self.ps1 = PixelShuffle_ICNR(ch, ch)
         self.up_sample_layers = nn.ModuleList()
-        # self.up_sample_layers += [PixelShuffle_ICNR(ch * 2, ch // 2)]
         for i in range(num_pool_layers - 1):
             self.up_sample_layers += [PS_upsample(ch * 2, ch // 2, drop_prob, blur=False)]
-            # self.up_sample_layers += [ConvBlock(ch * 2, ch // 2, drop_prob)]
             ch //= 2
         self.up_sample_layers += [ConvBlock(ch * 2, ch, drop_prob)]
-        # print(self.up_sample_layers)
         self.conv2 = nn.Sequential(
             nn.Conv2d(ch, ch // 2, kernel_size=1),
             nn.Conv2d(ch // 2, out_chans, kernel_size=1),
@@ -208,19 +205,15 @@ class CustomUnetModel(nn.Module):
         for layer in self.down_sample_layers:
             output = layer(output)
             stack.append(output)
-            # print(output.size())
             output = F.max_pool2d(output, kernel_size=2)
 
         output = self.conv(output)
-        # print(output.size())
         output = self.ps1(output)
 
         # Apply up-sampling layers
         for layer in self.up_sample_layers:
-            # print(1,output.size())
             output = torch.cat([output, stack.pop()], dim=1)
             output = layer(output)
-            # print(2,output.size())
         return self.conv2(output)
 
 class UnetAuto(nn.Module):
@@ -259,13 +252,10 @@ class UnetAuto(nn.Module):
 
         self.ps1 = PixelShuffle_ICNR(ch, ch)
         self.up_sample_layers = nn.ModuleList()
-        # self.up_sample_layers += [PixelShuffle_ICNR(ch * 2, ch // 2)]
         for i in range(num_pool_layers - 1):
             self.up_sample_layers += [PS_upsample(ch * 2, ch // 2, drop_prob, blur=False)]
-            # self.up_sample_layers += [ConvBlock(ch * 2, ch // 2, drop_prob)]
             ch //= 2
         self.up_sample_layers += [ConvBlock(ch * 2, ch, drop_prob)]
-        # print(self.up_sample_layers)
         self.conv2 = nn.Sequential(
             nn.Conv2d(ch, ch // 2, kernel_size=1),
             nn.Conv2d(ch // 2, out_chans, kernel_size=1),
@@ -288,7 +278,6 @@ class UnetAuto(nn.Module):
             output = layer(output)
             stack.append(output)
             intermediates.append(output)
-            # print(output.size())
             output = F.max_pool2d(output, kernel_size=2)
 
         output = self.conv(output)
@@ -305,44 +294,6 @@ class UnetAuto(nn.Module):
 
             output = self.conv2(output)
             intermediates.append(output)
-        # print(len(intermediates))
-        # print(intermediates[3:6])
-
-        # for i in intermediates:
-        #     print(i.size())
 
         return output, intermediates
-
-    # def encode(self, input):
-    #     """
-    #     Args:
-    #         input (torch.Tensor): Input tensor of shape [batch_size, self.in_chans, height, width]
-
-    #     Returns:
-    #         (torch.Tensor): Output tensor of shape [batch_size, self.out_chans, height, width]
-    #     """
-    #     stack = []
-    #     intermediates = []
-    #     output = input
-    #     # Apply down-sampling layers
-    #     for layer in self.down_sample_layers:
-    #         output = layer(output)
-    #         stack.append(output)
-    #         intermediates.append(output)
-    #         # print(output.size())
-    #         output = F.max_pool2d(output, kernel_size=2)
-
-    #     output = self.conv(output)
-    #     intermediates.append(output)
-    #     output = self.ps1(output)
-    #     intermediates.append(output)
-
-    #     # print(len(intermediates))
-    #     # print(intermediates[3:6])
-
-    #     # for i in intermediates:
-    #     #     print(i.size())
-
-    #     return output, intermediates
-
 
